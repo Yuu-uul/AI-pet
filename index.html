@@ -36,8 +36,45 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 12px; color: #333; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pet { text-align: center; font-size: 60px; margin: 10px 0; transition: transform 0.3s; }
+.pet-box { text-align: center; margin: 10px 0; }
+.pet {
+  font-size: 60px;
+  display: inline-block;
+  transition: transform 0.3s;
+  cursor: pointer;
+  user-select: none;
+}
 .pet.bounce { transform: scale(1.2) rotate(10deg); }
+.pet-name { font-size: 13px; color: #888; margin-top: 4px; }
+
+/* 宠物选择器 */
+.pet-picker {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0 16px;
+  flex-wrap: wrap;
+}
+.pet-option {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.pet-option:hover { transform: scale(1.1); }
+.pet-option.active {
+  border-color: #ff9f43;
+  background: #fff3e0;
+  transform: scale(1.1);
+}
+
 .stats {
   display: flex;
   justify-content: space-around;
@@ -94,7 +131,12 @@ input[type=file] { display: none; }
   <h1>我的 AI 健康宠物</h1>
   <div class="weather" id="weather">📍 深圳 · 加载中...</div>
 
-  <div class="pet" id="pet">🐶</div>
+  <div class="pet-box">
+    <div class="pet" id="pet" onclick="petTouch()">🐶</div>
+    <div class="pet-name" id="petName">柴犬 · 旺财</div>
+  </div>
+
+  <div class="pet-picker" id="petPicker"></div>
 
   <div class="stats">
     <div class="stat"><div class="label">今日步数</div><div class="value" id="steps">2000</div></div>
@@ -135,7 +177,67 @@ var API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completion
 var MODEL = "qwen-vl-plus";
 /* ================================================================== */
 
+/* ===== 宠物库：每种宠物有自己的名字、表情、性格台词 ===== */
+var PETS = [
+  {
+    emoji: "🐶", name: "柴犬 · 旺财",
+    happy: "汪汪！今天也元气满满～",
+    sad: "呜呜...主人是不是不爱我了",
+    eat: "汪！这个看起来好好吃！",
+    walk: "汪！我要去公园跑圈圈！",
+    sleep: "汪...晚安，做个好梦",
+    touch: "汪汪汪！（开心地摇尾巴）"
+  },
+  {
+    emoji: "🐱", name: "猫咪 · 咪咪",
+    happy: "喵～今天心情不错呢",
+    sad: "喵...（默默走开）",
+    eat: "喵？这个...本喵勉强吃一口吧",
+    walk: "喵！散步要去抓蝴蝶！",
+    sleep: "喵...本喵先睡了，别吵",
+    touch: "喵～（蹭了蹭你的手）"
+  },
+  {
+    emoji: "🐰", name: "兔子 · 雪球",
+    happy: "耶！今天有胡萝卜吃吗？",
+    sad: "（耳朵耷拉下来了）",
+    eat: "哇！这个能吃吗？",
+    walk: "蹦蹦跳跳！出发！",
+    sleep: "呼...呼...（缩成一团）",
+    touch: "（用鼻子蹭你手心）"
+  },
+  {
+    emoji: "🐹", name: "仓鼠 · 瓜子",
+    happy: "吱吱！今天也努力存粮！",
+    sad: "吱...（把脸埋进腮帮子里）",
+    eat: "吱！我要藏起来慢慢吃！",
+    walk: "跑轮！跑轮！我要跑轮！",
+    sleep: "吱...（抱着瓜子睡着了）",
+    touch: "吱吱！（在你手心打滚）"
+  },
+  {
+    emoji: "🐢", name: "乌龟 · 慢慢",
+    happy: "......今天也很平静。",
+    sad: "......（把头缩进壳里）",
+    eat: "......（慢慢咀嚼中）",
+    walk: "......我走得很慢，但从不后退。",
+    sleep: "......（已经睡着了）",
+    touch: "......（伸出头看了你一眼）"
+  },
+  {
+    emoji: "🦊", name: "狐狸 · 小狐",
+    happy: "哼哼～今天也是聪明的一天",
+    sad: "（尾巴垂下来了）",
+    eat: "这个...本狐狸鉴定为美味！",
+    walk: "走！带你去探险！",
+    sleep: "嘘...我要在树洞里休息了",
+    touch: "（用尾巴轻轻扫你）"
+  }
+];
+/* ========================================================== */
+
 var DEMO = false;
+var currentPet = 0;
 var state = { steps: 2000, calories: 0, sleep: 6, mood: 71 };
 
 var $ = function(id){ return document.getElementById(id); };
@@ -146,12 +248,46 @@ window.onload = function(){
     DEMO = true;
     $("mode").textContent = "🎬 演示模式";
   }
+  buildPetPicker();
   render();
   loadWeather();
 };
 
+/* ---------- 生成宠物选择器 ---------- */
+function buildPetPicker(){
+  var box = $("petPicker");
+  box.innerHTML = "";
+  PETS.forEach(function(pet, i){
+    var div = document.createElement("div");
+    div.className = "pet-option" + (i === currentPet ? " active" : "");
+    div.textContent = pet.emoji;
+    div.onclick = function(){ selectPet(i); };
+    box.appendChild(div);
+  });
+}
+
+/* ---------- 切换宠物 ---------- */
+function selectPet(i){
+  currentPet = i;
+  buildPetPicker();
+  render();
+  bounce();
+  say(PETS[i].emoji + " " + PETS[i].name + " 来了！\n" + PETS[i].happy, true);
+}
+
+/* ---------- 摸宠物 ---------- */
+function petTouch(){
+  bounce();
+  state.mood = Math.min(100, state.mood + 2);
+  render();
+  say(PETS[currentPet].emoji + " " + PETS[currentPet].touch, true);
+}
+
 /* ---------- 渲染 ---------- */
 function render(){
+  var pet = PETS[currentPet];
+  $("pet").textContent = pet.emoji;
+  $("petName").textContent = pet.name;
   $("steps").textContent = state.steps;
   $("calories").textContent = state.calories;
   $("sleep").textContent = state.sleep + "h";
@@ -163,11 +299,6 @@ function render(){
   $("barFull").style.width = full + "%";
   $("barEnergy").style.width = energy + "%";
   $("barMood").style.width = mood + "%";
-
-  var pet = $("pet");
-  if (mood > 80) pet.textContent = "🐶";
-  else if (mood > 50) pet.textContent = "🐕";
-  else pet.textContent = "🐩";
 }
 
 function say(text, ok){
@@ -230,7 +361,7 @@ function demoRecognize(){
     state.mood = Math.max(20, state.mood - 8);
     render();
     bounce();
-    say("🍚 识别结果：红烧肉盖饭\n热量约 " + kcal + " kcal\n蛋白质 28g · 碳水 75g · 脂肪 22g\n⚠️ 热量偏高，建议今晚多散步 30 分钟～", true);
+    say(PETS[currentPet].eat + "\n🍚 识别结果：红烧肉盖饭\n热量约 " + kcal + " kcal\n蛋白质 28g · 碳水 75g · 脂肪 22g\n⚠️ 热量偏高，建议今晚多散步 30 分钟～", true);
     $("btnPhoto").disabled = false;
   }, 1200);
 }
@@ -270,7 +401,7 @@ function realRecognize(dataUrl){
     state.mood = Math.max(20, state.mood - 5);
     render();
     bounce();
-    say("🍚 " + info.name + "\n热量约 " + info.kcal + " kcal\n蛋白质 " + info.protein + "g · 碳水 " + info.carb + "g · 脂肪 " + info.fat + "g\n💡 " + info.advice, true);
+    say(PETS[currentPet].eat + "\n🍚 " + info.name + "\n热量约 " + info.kcal + " kcal\n蛋白质 " + info.protein + "g · 碳水 " + info.carb + "g · 脂肪 " + info.fat + "g\n💡 " + info.advice, true);
     $("btnPhoto").disabled = false;
   })
   .catch(function(err){
@@ -288,7 +419,7 @@ $("btnWalk").onclick = function(){
   state.mood = Math.min(100, state.mood + 6);
   render();
   bounce();
-  say("🚶 散步完成！步数 +1000，宠物很开心～", true);
+  say(PETS[currentPet].walk, true);
 };
 
 /* ---------- 模拟早睡 ---------- */
@@ -297,7 +428,7 @@ $("btnSleep").onclick = function(){
   state.mood = Math.min(100, state.mood + 10);
   render();
   bounce();
-  say("😴 睡满 8 小时，精神满满！", true);
+  say(PETS[currentPet].sleep, true);
 };
 </script>
 </body>
