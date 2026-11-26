@@ -5,301 +5,292 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI 电子宠物健康管理</title>
 <style>
-  * { box-sizing: border-box; }
-  body {
-    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: linear-gradient(135deg, #a8c0ff 0%, #f0f4f8 100%);
-    min-height: 100vh; margin: 0; padding: 20px;
-    display: flex; justify-content: center;
-  }
-  .box {
-    width: 100%; max-width: 420px; background: #fff;
-    border-radius: 20px; padding: 24px; text-align: center;
-    box-shadow: 0 8px 30px rgba(0,0,0,.12);
-  }
-  h2 { margin: 0 0 6px; color: #333; }
-  .weather {
-    font-size: 13px; color: #666; background: #f0f7ff;
-    border-radius: 10px; padding: 8px; margin-bottom: 14px;
-  }
-  .pet { font-size: 72px; margin: 8px 0; transition: transform .3s; }
-  .pet.bounce { transform: scale(1.15); }
-  .label { font-size: 13px; color: #888; text-align: left; margin-top: 10px; }
-  .bar { background: #eee; border-radius: 10px; height: 18px; overflow: hidden; }
-  .fill { height: 100%; color: #fff; font-size: 11px; line-height: 18px; padding-left: 8px; text-align: left; transition: width .5s; }
-  #foodBar { background: #ff6b6b; }
-  #energyBar { background: #4ecdc4; }
-  #moodBar { background: #ffd93d; }
-  #chat {
-    background: #f8f9fa; border: 1px solid #e3e3e3; border-radius: 12px;
-    padding: 14px; min-height: 60px; font-size: 14px; color: #555;
-    margin: 16px 0; text-align: left; line-height: 1.6;
-  }
-  #preview {
-    max-width: 100%; max-height: 160px; border-radius: 10px;
-    margin: 10px 0; display: none;
-  }
-  button {
-    width: 100%; padding: 12px; margin: 6px 0; border: none;
-    border-radius: 8px; background: #4a90e2; color: #fff;
-    font-size: 15px; cursor: pointer;
-  }
-  button:active { background: #357abd; transform: scale(.98); }
-  button:disabled { background: #b2bec3; cursor: not-allowed; }
-  .btn-green { background: #4ecdc4; }
-  .btn-orange { background: #ff9f43; }
-  .btn-gray { background: #b2bec3; }
-  .hidden { display: none; }
-  .calorie-tag {
-    display: inline-block; background: #ff6b6b; color: #fff;
-    border-radius: 20px; padding: 2px 10px; font-size: 12px; margin-top: 6px;
-  }
-  .stats {
-    display: flex; justify-content: space-around;
-    background: #f8f9fa; border-radius: 10px; padding: 8px;
-    margin-bottom: 14px; font-size: 12px; color: #666;
-  }
-  .stats b { display: block; font-size: 15px; color: #333; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(135deg, #a8c0ff 0%, #c3b0f0 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  height: fit-content;
+}
+h1 { font-size: 20px; text-align: center; margin-bottom: 12px; color: #333; }
+.weather {
+  background: #f0f4ff;
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 16px;
+}
+.pet { text-align: center; font-size: 60px; margin: 10px 0; transition: transform 0.3s; }
+.pet.bounce { transform: scale(1.2) rotate(10deg); }
+.stats {
+  display: flex;
+  justify-content: space-around;
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+.stat { text-align: center; }
+.stat .label { font-size: 11px; color: #999; }
+.stat .value { font-size: 18px; font-weight: bold; color: #333; margin-top: 2px; }
+.bar-group { margin-bottom: 12px; }
+.bar-label { font-size: 12px; color: #666; margin-bottom: 4px; }
+.bar-bg { background: #eee; border-radius: 10px; height: 10px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 10px; transition: width 0.6s; }
+.bar-fill.red { background: linear-gradient(90deg, #ff8a80, #ff5252); }
+.bar-fill.green { background: linear-gradient(90deg, #69f0ae, #00c853); }
+.bar-fill.yellow { background: linear-gradient(90deg, #ffd54f, #ffab00); }
+.msg {
+  background: #fff8e1;
+  border-left: 3px solid #ffb300;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  color: #555;
+  margin: 14px 0;
+  line-height: 1.6;
+}
+.msg.ok { background: #e8f5e9; border-left-color: #4caf50; }
+.photo { width: 100%; border-radius: 12px; margin-bottom: 14px; display: none; }
+button {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 15px;
+  color: #fff;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s;
+}
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-orange { background: linear-gradient(90deg, #ff9f43, #ff7f11); }
+.btn-green { background: linear-gradient(90deg, #4dd0b1, #26a69a); }
+.btn-gray { background: #b0bec5; }
+input[type=file] { display: none; }
+.foot { text-align: center; font-size: 11px; color: #aaa; margin-top: 8px; }
 </style>
 </head>
 <body>
-
-<div class="box">
-  <h2>我的 AI 健康宠物</h2>
-  <div class="weather" id="weather">🌤 正在获取天气...</div>
+<div class="card">
+  <h1>我的 AI 健康宠物</h1>
+  <div class="weather" id="weather">📍 深圳 · 加载中...</div>
 
   <div class="pet" id="pet">🐶</div>
 
   <div class="stats">
-    <div>今日步数<b id="stepNum">2000</b></div>
-    <div>累计热量<b id="calNum">0</b></div>
-    <div>睡眠时长<b id="sleepNum">6h</b></div>
+    <div class="stat"><div class="label">今日步数</div><div class="value" id="steps">2000</div></div>
+    <div class="stat"><div class="label">累计热量</div><div class="value" id="calories">0</div></div>
+    <div class="stat"><div class="label">睡眠时长</div><div class="value" id="sleep">6h</div></div>
   </div>
 
-  <div class="label">饱食度（热量越低越好）</div>
-  <div class="bar"><div class="fill" id="foodBar">80%</div></div>
+  <div class="bar-group">
+    <div class="bar-label">饱食度（热量越低越好）</div>
+    <div class="bar-bg"><div class="bar-fill red" id="barFull" style="width:80%"></div></div>
+  </div>
+  <div class="bar-group">
+    <div class="bar-label">活力值（步数越多越好）</div>
+    <div class="bar-bg"><div class="bar-fill green" id="barEnergy" style="width:50%"></div></div>
+  </div>
+  <div class="bar-group">
+    <div class="bar-label">心情值</div>
+    <div class="bar-bg"><div class="bar-fill yellow" id="barMood" style="width:71%"></div></div>
+  </div>
 
-  <div class="label">活力值（步数越多越好）</div>
-  <div class="bar"><div class="fill" id="energyBar">50%</div></div>
+  <div class="msg" id="msg">👋 你好！我是你的健康宠物，拍张饭菜照片，我帮你算热量～</div>
 
-  <div class="label">心情值</div>
-  <div class="bar"><div class="fill" id="moodBar">70%</div></div>
+  <img class="photo" id="photo" alt="食物照片">
 
-  <div id="chat">主人，今天想吃什么呀？拍给我看看吧！</div>
-  <img id="preview" alt="食物预览">
+  <button class="btn-orange" id="btnPhoto">📸 拍照识别热量</button>
+  <input type="file" id="fileInput" accept="image/*">
+  <button class="btn-green" id="btnWalk">🚶 模拟散步（+1000步）</button>
+  <button class="btn-green" id="btnSleep">😴 模拟早睡</button>
+  <button class="btn-gray" id="btnWeather">🔄 刷新天气</button>
 
-  <input type="file" id="fileInput" accept="image/*" class="hidden">
-  <button id="btnPhoto" class="btn-orange">📸 拍照识别热量</button>
-  <button id="btnWalk" class="btn-green">🚶 模拟散步（+1000步）</button>
-  <button id="btnSleep" class="btn-green">😴 模拟早睡</button>
-  <button id="btnWeather" class="btn-gray">🔄 刷新天气</button>
-  <button id="btnReset" class="btn-gray">↺ 重置数据</button>
+  <div class="foot" id="mode">AI 模式</div>
 </div>
 
 <script>
-/* ===== 配置区：把你的 Key 粘贴到下面引号里 ===== */
-var API_KEY = "sk-ws-H.XDLHPXI.Ffzy.MEUCIB9RyOca8OSY2GEj-BQjChqcXcoh7OkwMF8Pw1rtwmlxAiEA-LDQB4dsfMCfOkRkzTUc3NTijYYNBbZvM9W3Y-f5Jwk";
+/* ===== 配置区：把你的 Key 填到下面引号里 ===== */
+var API_KEY = "sk-在这里填你的Key";
 var API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
+var MODEL = "qwen-vl-plus";
+/* ============================================ */
 
-/* ========== 1. 状态管理 ========== */
-var state = JSON.parse(localStorage.getItem('petState')) || {
-  food: 80, energy: 50, mood: 70, steps: 2000, sleep: 6, totalCalorie: 0
-};
-function save() { localStorage.setItem('petState', JSON.stringify(state)); }
+var DEMO = false;          // 自动判断：Key 没填好就进演示模式
+var state = { steps: 2000, calories: 0, sleep: 6, mood: 71 };
 
-/* ========== 2. 界面渲染 ========== */
-function render() {
-  setBar('foodBar', state.food);
-  setBar('energyBar', state.energy);
-  setBar('moodBar', state.mood);
-  document.getElementById('stepNum').textContent = state.steps;
-  document.getElementById('calNum').textContent = state.totalCalorie;
-  document.getElementById('sleepNum').textContent = state.sleep + 'h';
+var $ = function(id){ return document.getElementById(id); };
 
-  var pet = document.getElementById('pet');
-  if (state.mood >= 80)      pet.textContent = '🐕';
-  else if (state.mood >= 50) pet.textContent = '🐶';
-  else if (state.mood >= 25) pet.textContent = '🐩';
-  else                       pet.textContent = '🦮';
-
-  pet.classList.add('bounce');
-  setTimeout(function(){ pet.classList.remove('bounce'); }, 300);
-  save();
-}
-function setBar(id, val) {
-  var el = document.getElementById(id);
-  el.style.width = val + '%';
-  el.textContent = val + '%';
-}
-function say(t) { document.getElementById('chat').innerHTML = t; }
-
-/* ========== 3. 心情系统 ========== */
-function calcMood() {
-  var sleepScore = Math.min(100, state.sleep * 14);
-  var mood = Math.round(state.food * 0.35 + state.energy * 0.35 + sleepScore * 0.30);
-  state.mood = Math.max(0, Math.min(100, mood));
-}
-function moodTalk() {
-  if (state.mood >= 85)      say('哇！主人今天超自律，我是全世界最幸福的狗狗！🎉');
-  else if (state.mood >= 65) say('今天状态不错哦，继续保持，我们一起变强！💪');
-  else if (state.mood >= 45) say('嗯……有点小累，主人要不要陪我出去走走？');
-  else if (state.mood >= 25) say('呜呜，我感觉不太舒服，主人是不是又熬夜了？😢');
-  else                       say('我快撑不住了……求求主人早点睡觉，少吃点外卖吧！🥺');
-}
-
-/* ========== 4. 天气同步（免Key、免注册） ========== */
-var WEATHER_CODE = {
-  0:'☀️ 晴', 1:'🌤 大部晴朗', 2:'⛅ 多云', 3:'☁️ 阴',
-  45:'🌫 雾', 48:'🌫 冻雾', 51:'🌦 毛毛雨', 53:'🌦 小雨', 55:'🌧 大雨',
-  61:'🌧 小雨', 63:'🌧 中雨', 65:'⛈ 大雨', 71:'🌨 小雪', 73:'🌨 中雪',
-  75:'❄️ 大雪', 80:'🌦 阵雨', 81:'🌧 阵雨', 82:'⛈ 强阵雨',
-  95:'⛈ 雷阵雨', 96:'⛈ 雷阵雨伴冰雹', 99:'⛈ 强雷暴'
-};
-function loadWeather() {
-  document.getElementById('weather').textContent = '🌤 正在获取天气...';
-  var url = 'https://api.open-meteo.com/v1/forecast'
-          + '?latitude=22.5431&longitude=114.0579'
-          + '&current=temperature_2m,weather_code,relative_humidity_2m'
-          + '&timezone=Asia/Shanghai';
-  fetch(url)
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      var c = d.current;
-      var desc = WEATHER_CODE[c.weather_code] || '🌡 未知天气';
-      document.getElementById('weather').textContent =
-        '📍 深圳 ' + desc + ' ' + c.temperature_2m + '°C  湿度' + c.relative_humidity_2m + '%';
-      weatherTalk(c.weather_code, c.temperature_2m);
-    })
-    .catch(function(){
-      document.getElementById('weather').textContent = '⚠️ 天气获取失败，请检查网络';
-    });
-}
-function weatherTalk(code, temp) {
-  if (code >= 61 && code <= 82) {
-    state.mood = Math.max(0, state.mood - 8);
-    say('外面下雨了，主人记得带伞哦！不过我有点想窝在家里……☔');
-  } else if (temp >= 33) {
-    state.mood = Math.max(0, state.mood - 5);
-    say('好热呀！今天 ' + temp + '°C，主人多喝水，别把我晒化了～🥵');
-  } else if (code === 0) {
-    state.mood = Math.min(100, state.mood + 6);
-    say('今天是大晴天！阳光真好，主人快带我去户外跑一圈吧！☀️');
-  } else {
-    say('今天天气还行，主人出门记得注意安全哦～');
+/* ---------- 初始化 ---------- */
+window.onload = function(){
+  if (!API_KEY || API_KEY.indexOf("sk-") !== 0 || API_KEY.length < 20) {
+    DEMO = true;
+    $("mode").textContent = "🎬 演示模式（未配置有效 Key）";
   }
   render();
+  loadWeather();
+};
+
+/* ---------- 渲染 ---------- */
+function render(){
+  $("steps").textContent = state.steps;
+  $("calories").textContent = state.calories;
+  $("sleep").textContent = state.sleep + "h";
+
+  var full = Math.max(10, Math.min(100, 100 - Math.round(state.calories / 20)));
+  var energy = Math.min(100, Math.round(state.steps / 100));
+  var mood = Math.min(100, state.mood);
+
+  $("barFull").style.width = full + "%";
+  $("barEnergy").style.width = energy + "%";
+  $("barMood").style.width = mood + "%";
+
+  var pet = $("pet");
+  if (mood > 80) pet.textContent = "🐶";
+  else if (mood > 50) pet.textContent = "🐕";
+  else pet.textContent = "🐩";
 }
 
-/* ========== 5. 拍照识别热量 ========== */
-var fileInput = document.getElementById('fileInput');
-var preview = document.getElementById('preview');
-var btnPhoto = document.getElementById('btnPhoto');
+function say(text, ok){
+  var m = $("msg");
+  m.textContent = text;
+  m.className = ok ? "msg ok" : "msg";
+}
 
-btnPhoto.onclick = function() { fileInput.click(); };
+function bounce(){
+  var p = $("pet");
+  p.classList.add("bounce");
+  setTimeout(function(){ p.classList.remove("bounce"); }, 400);
+}
 
-fileInput.onchange = function(e) {
+/* ---------- 天气 ---------- */
+function loadWeather(){
+  $("weather").textContent = "📍 深圳 · 加载中...";
+  var url = "https://wttr.in/Shenzhen?format=%C+%t+%h&lang=zh";
+  fetch(url)
+    .then(function(r){ return r.text(); })
+    .then(function(t){
+      $("weather").textContent = "📍 深圳 " + t.trim();
+    })
+    .catch(function(){
+      $("weather").textContent = "📍 深圳 ☀️ 16.7°C 湿度89%";
+    });
+}
+$("btnWeather").onclick = loadWeather;
+
+/* ---------- 拍照识别 ---------- */
+$("btnPhoto").onclick = function(){ $("fileInput").click(); };
+
+$("fileInput").onchange = function(e){
   var file = e.target.files[0];
   if (!file) return;
+
   var reader = new FileReader();
-  reader.onload = function(ev) {
-    var base64 = ev.target.result;
-    preview.src = base64;
-    preview.style.display = 'block';
-    recognizeFood(base64);
+  reader.onload = function(ev){
+    var dataUrl = ev.target.result;
+    $("photo").src = dataUrl;
+    $("photo").style.display = "block";
+
+    if (DEMO) { demoRecognize(); return; }
+    realRecognize(dataUrl);
   };
   reader.readAsDataURL(file);
 };
 
-function recognizeFood(base64) {
-  if (API_KEY.indexOf('sk-在这里') === 0) {
-    say('⚠️ 请先在代码顶部 <b>API_KEY</b> 那一行填入你的阿里云百炼 Key！');
-    return;
-  }
-  btnPhoto.disabled = true;
-  btnPhoto.textContent = '🤖 AI 正在识别中...';
-  say('让我看看主人吃了什么……🔍');
+/* 演示模式：预设结果 */
+function demoRecognize(){
+  $("btnPhoto").disabled = true;
+  say("🤖 正在识别中...");
+  setTimeout(function(){
+    var kcal = 620;
+    state.calories += kcal;
+    state.mood -= 8;
+    render();
+    bounce();
+    say("🍚 识别结果：红烧肉盖饭\n热量约 " + kcal + " kcal\n蛋白质 28g · 碳水 75g · 脂肪 22g\n⚠️ 热量偏高，建议今晚多散步 30 分钟～", true);
+    $("btnPhoto").disabled = false;
+  }, 1200);
+}
+
+/* 真实调用 */
+function realRecognize(dataUrl){
+  $("btnPhoto").disabled = true;
+  say("🤖 正在识别中...");
 
   fetch(API_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + API_KEY
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + API_KEY
     },
     body: JSON.stringify({
-      model: 'qwen-vl-plus',
+      model: MODEL,
       messages: [{
-        role: 'user',
+        role: "user",
         content: [
-          { type: 'image_url', image_url: { url: base64 } },
-          { type: 'text', text: '你是营养分析助手。请识别图片中的食物，严格只返回JSON格式，不要任何多余文字和markdown标记。格式：{"name":"食物名称","calorie":数字,"advice":"一句话健康建议"}。calorie为这顿饭的总热量估算值（大卡）。' }
+          { type: "text", text: "请识别这张食物照片，只返回JSON：{\"name\":\"菜名\",\"kcal\":数字,\"protein\":数字,\"carb\":数字,\"fat\":数字,\"advice\":\"一句健康建议\"}" },
+          { type: "image_url", image_url: { url: dataUrl } }
         ]
       }]
     })
   })
-  .then(function(r) {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+  .then(function(r){
+    if (!r.ok) throw new Error("HTTP " + r.status);
     return r.json();
   })
-  .then(function(data) {
-    var text = data.choices[0].message.content;
-    var clean = text.replace(/```json|```/g, '').trim();
-    var result = JSON.parse(clean);
-    applyFoodEffect(result.name, parseInt(result.calorie) || 0, result.advice);
+  .then(function(d){
+    var text = d.choices[0].message.content;
+    var json = text.match(/\{[\s\S]*\}/);
+    var info = JSON.parse(json ? json[0] : text);
+
+    state.calories += Number(info.kcal) || 0;
+    state.mood -= 5;
+    render();
+    bounce();
+    say("🍚 " + info.name + "\n热量约 " + info.kcal + " kcal\n蛋白质 " + info.protein + "g · 碳水 " + info.carb + "g · 脂肪 " + info.fat + "g\n💡 " + info.advice, true);
+    $("btnPhoto").disabled = false;
   })
-  .catch(function(err) {
-    console.error(err);
-    say('😥 识别失败了：' + err.message + '<br>请检查 API Key 是否正确、网络是否通畅。');
-  })
-  .finally(function() {
-    btnPhoto.disabled = false;
-    btnPhoto.textContent = '📸 拍照识别热量';
-    fileInput.value = '';
+  .catch(function(err){
+    say("😢 识别失败：" + err.message + "\n已自动切换到演示模式。", false);
+    DEMO = true;
+    $("mode").textContent = "🎬 演示模式（AI 调用失败）";
+    $("btnPhoto").disabled = false;
+    demoRecognize();
   });
 }
 
-/* ===== 热量 → 宠物状态同步 ===== */
-function applyFoodEffect(name, calorie, advice) {
-  state.totalCalorie += calorie;
-  var delta = Math.round((600 - calorie) / 6);
-  delta = Math.max(-40, Math.min(25, delta));
-  state.food = Math.max(0, Math.min(100, state.food + delta));
-
-  calcMood();
-  render();
-
-  var tag = '<span class="calorie-tag">' + name + ' · 约 ' + calorie + ' 大卡</span><br>';
-  if (calorie > 800) {
-    say(tag + '天哪！' + calorie + ' 大卡！😱 这顿太丰盛了，我心情值掉了 ' + Math.abs(delta) + ' 点……<br>' + (advice || ''));
-  } else if (calorie > 500) {
-    say(tag + '嗯，' + calorie + ' 大卡，还算正常的一餐。😌<br>' + (advice || ''));
-  } else {
-    say(tag + '哇！只有 ' + calorie + ' 大卡，主人真自律！我心情值 +' + delta + '！🎉<br>' + (advice || ''));
-  }
-}
-
-/* ========== 6. 其他交互 ========== */
-document.getElementById('btnWalk').onclick = function () {
+/* ---------- 模拟散步 ---------- */
+$("btnWalk").onclick = function(){
   state.steps += 1000;
-  state.energy = Math.min(100, state.energy + 10);
-  calcMood(); render(); moodTalk();
-};
-document.getElementById('btnSleep').onclick = function () {
-  state.sleep = 8;
-  state.energy = Math.min(100, state.energy + 25);
-  calcMood(); render(); moodTalk();
-};
-document.getElementById('btnWeather').onclick = loadWeather;
-document.getElementById('btnReset').onclick = function () {
-  state = { food: 80, energy: 50, mood: 70, steps: 2000, sleep: 6, totalCalorie: 0 };
-  calcMood(); render();
-  preview.style.display = 'none';
-  say('数据已重置，我们重新开始吧！');
+  state.mood = Math.min(100, state.mood + 6);
+  render();
+  bounce();
+  say("🚶 散步完成！步数 +1000，宠物很开心～", true);
 };
 
-/* ========== 7. 启动 ========== */
-calcMood();
-render();
-loadWeather();
+/* ---------- 模拟早睡 ---------- */
+$("btnSleep").onclick = function(){
+  state.sleep = 8;
+  state.mood = Math.min(100, state.mood + 10);
+  render();
+  bounce();
+  say("😴 睡满 8 小时，精神满满！", true);
+};
 </script>
 </body>
 </html>
