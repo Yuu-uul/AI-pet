@@ -168,11 +168,11 @@ input[type=file] { display: none; }
 </div>
 
 <script>
-/* ===== 配置区：以后 Key 修好了，填到下面引号里就能切回真实 AI ===== */
+/* ===== 配置区：Key 修好后填进引号，自动切回真实 AI ===== */
 var API_KEY = "";
 var API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
 var MODEL = "qwen-vl-plus";
-/* ================================================================== */
+/* ====================================================== */
 
 /* ===== 宠物库 ===== */
 var PETS = [
@@ -202,24 +202,44 @@ var PETS = [
     sleep:"嘘...我要在树洞里休息了", touch:"（用尾巴轻轻扫你）" }
 ];
 
-/* ===== 演示模式的食物库：每次识别随机挑一份 ===== */
+/* ===== 食物库：keywords 里的词出现在图片文件名里就精确匹配 ===== */
 var FOODS = [
   { name:"红烧肉盖饭", kcal:620, protein:28, carb:75, fat:22,
+    keywords:["红烧肉","盖饭","盖浇饭","hongshaorou"],
     advice:"热量偏高，建议今晚多散步 30 分钟～" },
   { name:"意面蔬菜沙拉", kcal:380, protein:15, carb:48, fat:12,
+    keywords:["意面","沙拉","蔬菜","pasta","salad"],
     advice:"营养均衡，继续保持！" },
+  { name:"炸鸡汉堡", kcal:540, protein:26, carb:52, fat:26,
+    keywords:["汉堡","炸鸡","burger","kfc","麦当劳"],
+    advice:"油炸食品，今天别再吃油炸的了" },
   { name:"鸡胸肉三明治", kcal:320, protein:32, carb:35, fat:8,
+    keywords:["三明治","鸡胸","sandwich"],
     advice:"高蛋白低脂，健身首选～" },
-  { name:"麻辣火锅（一人份）", kcal:850, protein:45, carb:60, fat:52,
+  { name:"麻辣火锅", kcal:850, protein:45, carb:60, fat:52,
+    keywords:["火锅","麻辣","hotpot"],
     advice:"脂肪超标了，明天记得清淡一点" },
   { name:"寿司拼盘", kcal:450, protein:24, carb:68, fat:9,
+    keywords:["寿司","刺身","sushi"],
     advice:"碳水稍多，饭后可以散散步" },
   { name:"牛油果奶昔", kcal:290, protein:8, carb:30, fat:16,
+    keywords:["奶昔","牛油果","smoothie"],
     advice:"优质脂肪，适量饮用没问题" },
   { name:"牛肉拉面", kcal:560, protein:30, carb:82, fat:14,
+    keywords:["拉面","面条","牛肉面","noodle","ramen"],
     advice:"钠含量偏高，汤少喝一点" },
   { name:"水果酸奶碗", kcal:240, protein:12, carb:38, fat:5,
-    advice:"低卡健康，非常棒的选择！" }
+    keywords:["酸奶","水果","yogurt"],
+    advice:"低卡健康，非常棒的选择！" },
+  { name:"蛋炒饭", kcal:480, protein:16, carb:72, fat:14,
+    keywords:["炒饭","蛋炒","friedrice"],
+    advice:"碳水较多，晚饭可以少吃点主食" },
+  { name:"烤串（10 串）", kcal:680, protein:42, carb:20, fat:48,
+    keywords:["烤串","烧烤","羊肉串","bbq"],
+    advice:"烧烤类油脂高，建议搭配蔬菜" },
+  { name:"清蒸鲈鱼", kcal:260, protein:38, carb:4, fat:10,
+    keywords:["鲈鱼","清蒸","鱼","fish"],
+    advice:"高蛋白低脂，非常健康！" }
 ];
 /* ========================================================== */
 
@@ -269,7 +289,7 @@ function petTouch(){
   say(PETS[currentPet].emoji + " " + PETS[currentPet].touch, true);
 }
 
-/* ---------- 渲染（饱食度算法已修正） ---------- */
+/* ---------- 渲染 ---------- */
 function render(){
   var pet = PETS[currentPet];
   $("pet").textContent = pet.emoji;
@@ -278,7 +298,6 @@ function render(){
   $("calories").textContent = state.calories;
   $("sleep").textContent = state.sleep + "h";
 
-  // 每日建议摄入 2000 kcal：吃满 2000 时饱食度归零
   var full = Math.max(5, Math.min(100, Math.round(100 - state.calories / 20)));
   var energy = Math.min(100, Math.round(state.steps / 100));
   var mood = Math.min(100, state.mood);
@@ -322,26 +341,43 @@ $("btnPhoto").onclick = function(){ $("fileInput").click(); };
 $("fileInput").onchange = function(e){
   var file = e.target.files[0];
   if (!file) return;
+  var fileName = file.name || "";
   var reader = new FileReader();
   reader.onload = function(ev){
     var dataUrl = ev.target.result;
     $("photo").src = dataUrl;
     $("photo").style.display = "block";
-    if (DEMO) { demoRecognize(); return; }
+    if (DEMO) { demoRecognize(fileName); return; }
     realRecognize(dataUrl);
   };
   reader.readAsDataURL(file);
 };
 
-/* 演示模式：随机挑一份食物，且不会连续重复 */
-function demoRecognize(){
+/* 按文件名匹配食物，匹配不上返回 -1 */
+function matchFoodByName(fileName){
+  if (!fileName) return -1;
+  var name = fileName.toLowerCase();
+  for (var i = 0; i < FOODS.length; i++) {
+    var kws = FOODS[i].keywords || [];
+    for (var j = 0; j < kws.length; j++) {
+      if (name.indexOf(kws[j].toLowerCase()) !== -1) return i;
+    }
+  }
+  return -1;
+}
+
+/* 演示模式：文件名能匹配就精确返回，匹配不上就随机（不连续重复） */
+function demoRecognize(fileName){
   $("btnPhoto").disabled = true;
   say("🤖 正在识别中...");
 
   setTimeout(function(){
-    var i;
-    do { i = Math.floor(Math.random() * FOODS.length); }
-    while (i === lastFoodIndex && FOODS.length > 1);
+    var i = matchFoodByName(fileName);
+
+    if (i === -1) {
+      do { i = Math.floor(Math.random() * FOODS.length); }
+      while (i === lastFoodIndex && FOODS.length > 1);
+    }
     lastFoodIndex = i;
 
     var food = FOODS[i];
@@ -355,7 +391,7 @@ function demoRecognize(){
         "\n蛋白质 " + food.protein + "g · 碳水 " + food.carb + "g · 脂肪 " + food.fat + "g" +
         "\n" + (food.kcal > 600 ? "⚠️ " : "💡 ") + food.advice, true);
     $("btnPhoto").disabled = false;
-  }, 1000 + Math.random() * 800);   // 1~1.8 秒随机延迟，更像真在识别
+  }, 1000 + Math.random() * 800);
 }
 
 /* 真实调用 */
@@ -405,7 +441,7 @@ function realRecognize(dataUrl){
     DEMO = true;
     $("mode").textContent = "🎬 演示模式";
     $("btnPhoto").disabled = false;
-    demoRecognize();
+    demoRecognize("");
   });
 }
 
