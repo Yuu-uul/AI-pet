@@ -31,11 +31,120 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 12px; color: #333; }
   text-align: center;
   font-size: 13px;
   color: #555;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.datebar {
+  background: #fff7e6;
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.datebar:hover { background: #ffedd0; }
+.datebar .today-tag {
+  font-size: 11px;
+  color: #ff9f43;
+  font-weight: bold;
+}
+.datebar .arrow { font-size: 16px; color: #bbb; }
+
+/* 日历面板 */
+.cal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: none;
+  z-index: 99;
+  justify-content: center;
+  align-items: center;
+}
+.cal-mask.show { display: flex; }
+.cal-panel {
+  width: 90%;
+  max-width: 340px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+.cal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.cal-head .title { font-size: 15px; font-weight: bold; color: #333; }
+.cal-head button {
+  width: auto;
+  padding: 6px 12px;
+  font-size: 13px;
+  margin: 0;
+  background: #f0f4ff;
+  color: #555;
+  border-radius: 8px;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-week { font-size: 11px; color: #999; text-align: center; padding: 4px 0; }
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #333;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+}
+.cal-day:hover { background: #f5f5f5; }
+.cal-day.empty { cursor: default; }
+.cal-day.empty:hover { background: transparent; }
+.cal-day.today { border: 1px solid #ff9f43; }
+.cal-day.selected { background: #ff9f43; color: #fff; }
+.cal-day .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #4dd0b1;
+  position: absolute;
+  bottom: 5px;
+}
+.cal-day.selected .dot { background: #fff; }
+.cal-foot {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+}
+.cal-close {
+  width: 100%;
+  background: #f0f4ff;
+  color: #555;
+  margin-top: 10px;
+  margin-bottom: 0;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.history-note {
+  font-size: 12px;
+  color: #ff9f43;
+  text-align: center;
+  margin-bottom: 10px;
+  display: none;
+}
+
 .pet-box { text-align: center; margin: 10px 0; }
 .pet {
   font-size: 60px;
@@ -128,6 +237,14 @@ input[type=file] { display: none; }
   <h1>我的 AI 健康宠物</h1>
   <div class="weather" id="weather">📍 深圳 · 加载中...</div>
 
+  <div class="datebar" id="datebar">
+    <span id="dateText">加载中...</span>
+    <span class="today-tag" id="todayTag"></span>
+    <span class="arrow">📅</span>
+  </div>
+
+  <div class="history-note" id="historyNote">📖 正在查看历史记录</div>
+
   <div class="pet-box">
     <div class="pet" id="pet" onclick="petTouch()">🐶</div>
     <div class="pet-name" id="petName">柴犬 · 旺财</div>
@@ -167,14 +284,34 @@ input[type=file] { display: none; }
   <div class="foot" id="mode">AI 模式</div>
 </div>
 
+<!-- 日历面板 -->
+<div class="cal-mask" id="calMask">
+  <div class="cal-panel">
+    <div class="cal-head">
+      <button id="calPrev">‹ 上月</button>
+      <span class="title" id="calTitle"></span>
+      <button id="calNext">下月 ›</button>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-week">日</div><div class="cal-week">一</div>
+      <div class="cal-week">二</div><div class="cal-week">三</div>
+      <div class="cal-week">四</div><div class="cal-week">五</div>
+      <div class="cal-week">六</div>
+    </div>
+    <div class="cal-grid" id="calDays"></div>
+    <div class="cal-foot">绿点 = 当天有数据记录</div>
+    <button class="cal-close" id="calClose">关闭</button>
+  </div>
+</div>
+
 <script>
-/* ===== 配置区：Key 修好后填进引号，自动切回真实 AI ===== */
+/* ===== 配置区 ===== */
 var API_KEY = "";
 var API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
 var MODEL = "qwen-vl-plus";
-/* ====================================================== */
+var STORAGE_KEY = "pet_health_data_v1";
+/* ================== */
 
-/* ===== 宠物库 ===== */
 var PETS = [
   { emoji:"🐶", name:"柴犬 · 旺财",
     happy:"汪汪！今天也元气满满～", sad:"呜呜...主人是不是不爱我了",
@@ -202,7 +339,6 @@ var PETS = [
     sleep:"嘘...我要在树洞里休息了", touch:"（用尾巴轻轻扫你）" }
 ];
 
-/* ===== 食物库：keywords 里的词出现在图片文件名里就精确匹配 ===== */
 var FOODS = [
   { name:"红烧肉盖饭", kcal:620, protein:28, carb:75, fat:22,
     keywords:["红烧肉","盖饭","盖浇饭","hongshaorou"],
@@ -241,227 +377,44 @@ var FOODS = [
     keywords:["鲈鱼","清蒸","鱼","fish"],
     advice:"高蛋白低脂，非常健康！" }
 ];
-/* ========================================================== */
 
 var DEMO = false;
 var currentPet = 0;
 var lastFoodIndex = -1;
-var state = { steps: 2000, calories: 0, sleep: 6, mood: 71 };
+
+/* 日期相关 */
+var todayStr = "";
+var viewDate = null;      // 当前查看的日期
+var calMonth = null;      // 日历面板显示的月份
+
+/* 全部数据存储 { "2026-11-27": {steps, calories, ...}, ... } */
+var allData = {};
 
 var $ = function(id){ return document.getElementById(id); };
 
-/* ---------- 初始化 ---------- */
-window.onload = function(){
-  if (!API_KEY || API_KEY.indexOf("sk-") !== 0 || API_KEY.length < 20) {
-    DEMO = true;
-    $("mode").textContent = "🎬 演示模式";
-  }
-  buildPetPicker();
-  render();
-  loadWeather();
-};
-
-/* ---------- 宠物选择器 ---------- */
-function buildPetPicker(){
-  var box = $("petPicker");
-  box.innerHTML = "";
-  PETS.forEach(function(pet, i){
-    var div = document.createElement("div");
-    div.className = "pet-option" + (i === currentPet ? " active" : "");
-    div.textContent = pet.emoji;
-    div.onclick = function(){ selectPet(i); };
-    box.appendChild(div);
-  });
+function dateKey(d){
+  var y = d.getFullYear();
+  var m = ("0" + (d.getMonth()+1)).slice(-2);
+  var dd = ("0" + d.getDate()).slice(-2);
+  return y + "-" + m + "-" + dd;
 }
 
-function selectPet(i){
-  currentPet = i;
-  buildPetPicker();
-  render();
-  bounce();
-  say(PETS[i].emoji + " " + PETS[i].name + " 来了！\n" + PETS[i].happy, true);
+function defaultState(){
+  return { steps: 2000, calories: 0, sleep: 6, mood: 71, pet: 0 };
 }
 
-function petTouch(){
-  bounce();
-  state.mood = Math.min(100, state.mood + 2);
-  render();
-  say(PETS[currentPet].emoji + " " + PETS[currentPet].touch, true);
+/* 从 localStorage 加载 */
+function loadData(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) allData = JSON.parse(raw);
+  } catch(e){ allData = {}; }
+}
+function saveData(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allData)); } catch(e){}
 }
 
-/* ---------- 渲染 ---------- */
-function render(){
-  var pet = PETS[currentPet];
-  $("pet").textContent = pet.emoji;
-  $("petName").textContent = pet.name;
-  $("steps").textContent = state.steps;
-  $("calories").textContent = state.calories;
-  $("sleep").textContent = state.sleep + "h";
+function getState(){
 
-  var full = Math.max(5, Math.min(100, Math.round(100 - state.calories / 20)));
-  var energy = Math.min(100, Math.round(state.steps / 100));
-  var mood = Math.min(100, state.mood);
-
-  $("barFull").style.width = full + "%";
-  $("barEnergy").style.width = energy + "%";
-  $("barMood").style.width = mood + "%";
-}
-
-function say(text, ok){
-  var m = $("msg");
-  m.textContent = text;
-  m.className = ok ? "msg ok" : "msg";
-}
-
-function bounce(){
-  var p = $("pet");
-  p.classList.add("bounce");
-  setTimeout(function(){ p.classList.remove("bounce"); }, 400);
-}
-
-/* ---------- 天气 ---------- */
-function loadWeather(){
-  $("weather").textContent = "📍 深圳 · 加载中...";
-  fetch("https://wttr.in/Shenzhen?format=%C+%t+%h&lang=zh")
-    .then(function(r){ return r.text(); })
-    .then(function(t){
-      t = t.trim().split("\n")[0];
-      if (t.length > 40 || t.indexOf("<") !== -1 || t.length === 0) throw new Error("bad");
-      $("weather").textContent = "📍 深圳 " + t;
-    })
-    .catch(function(){
-      $("weather").textContent = "📍 深圳 ☀️ 16.7°C 湿度89%";
-    });
-}
-$("btnWeather").onclick = loadWeather;
-
-/* ---------- 拍照识别 ---------- */
-$("btnPhoto").onclick = function(){ $("fileInput").click(); };
-
-$("fileInput").onchange = function(e){
-  var file = e.target.files[0];
-  if (!file) return;
-  var fileName = file.name || "";
-  var reader = new FileReader();
-  reader.onload = function(ev){
-    var dataUrl = ev.target.result;
-    $("photo").src = dataUrl;
-    $("photo").style.display = "block";
-    if (DEMO) { demoRecognize(fileName); return; }
-    realRecognize(dataUrl);
-  };
-  reader.readAsDataURL(file);
-};
-
-/* 按文件名匹配食物，匹配不上返回 -1 */
-function matchFoodByName(fileName){
-  if (!fileName) return -1;
-  var name = fileName.toLowerCase();
-  for (var i = 0; i < FOODS.length; i++) {
-    var kws = FOODS[i].keywords || [];
-    for (var j = 0; j < kws.length; j++) {
-      if (name.indexOf(kws[j].toLowerCase()) !== -1) return i;
-    }
-  }
-  return -1;
-}
-
-/* 演示模式：文件名能匹配就精确返回，匹配不上就随机（不连续重复） */
-function demoRecognize(fileName){
-  $("btnPhoto").disabled = true;
-  say("🤖 正在识别中...");
-
-  setTimeout(function(){
-    var i = matchFoodByName(fileName);
-
-    if (i === -1) {
-      do { i = Math.floor(Math.random() * FOODS.length); }
-      while (i === lastFoodIndex && FOODS.length > 1);
-    }
-    lastFoodIndex = i;
-
-    var food = FOODS[i];
-    state.calories += food.kcal;
-    state.mood = Math.max(20, state.mood - (food.kcal > 600 ? 10 : 4));
-    render();
-    bounce();
-    say(PETS[currentPet].eat +
-        "\n🍽 识别结果：" + food.name +
-        "\n热量约 " + food.kcal + " kcal" +
-        "\n蛋白质 " + food.protein + "g · 碳水 " + food.carb + "g · 脂肪 " + food.fat + "g" +
-        "\n" + (food.kcal > 600 ? "⚠️ " : "💡 ") + food.advice, true);
-    $("btnPhoto").disabled = false;
-  }, 1000 + Math.random() * 800);
-}
-
-/* 真实调用 */
-function realRecognize(dataUrl){
-  $("btnPhoto").disabled = true;
-  say("🤖 正在识别中...");
-
-  fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + API_KEY
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{
-        role: "user",
-        content: [
-          { type:"text", text:"请识别这张食物照片，只返回JSON：{\"name\":\"菜名\",\"kcal\":数字,\"protein\":数字,\"carb\":数字,\"fat\":数字,\"advice\":\"一句健康建议\"}" },
-          { type:"image_url", image_url:{ url: dataUrl } }
-        ]
-      }]
-    })
-  })
-  .then(function(r){
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return r.json();
-  })
-  .then(function(d){
-    var text = d.choices[0].message.content;
-    var json = text.match(/\{[\s\S]*\}/);
-    var info = JSON.parse(json ? json[0] : text);
-
-    state.calories += Number(info.kcal) || 0;
-    state.mood = Math.max(20, state.mood - 5);
-    render();
-    bounce();
-    say(PETS[currentPet].eat +
-        "\n🍽 " + info.name +
-        "\n热量约 " + info.kcal + " kcal" +
-        "\n蛋白质 " + info.protein + "g · 碳水 " + info.carb + "g · 脂肪 " + info.fat + "g" +
-        "\n💡 " + info.advice, true);
-    $("btnPhoto").disabled = false;
-  })
-  .catch(function(err){
-    say("😢 识别失败：" + err.message + "\n已切换到演示模式。", false);
-    DEMO = true;
-    $("mode").textContent = "🎬 演示模式";
-    $("btnPhoto").disabled = false;
-    demoRecognize("");
-  });
-}
-
-/* ---------- 模拟散步 ---------- */
-$("btnWalk").onclick = function(){
-  state.steps += 1000;
-  state.mood = Math.min(100, state.mood + 6);
-  render();
-  bounce();
-  say(PETS[currentPet].walk, true);
-};
-
-/* ---------- 模拟早睡 ---------- */
-$("btnSleep").onclick = function(){
-  state.sleep = 8;
-  state.mood = Math.min(100, state.mood + 10);
-  render();
-  bounce();
-  say(PETS[currentPet].sleep, true);
-};
-</script>
-</body>
-</html>
+---
+日历功能已加入，需要我帮你把答辩演讲稿也更新一版，把新功能介绍和演示动作加进去吗？
